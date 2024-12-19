@@ -1,0 +1,94 @@
+import heapq
+
+def solve_maze(maze_lines):
+    # Directions: 0=East, 1=South, 2=West, 3=North
+    # For each direction, the (dr, dc) for a forward step:
+    directions = [
+        (0, 1),   # East
+        (1, 0),   # South
+        (0, -1),  # West
+        (-1, 0)   # North
+    ]
+    
+    rows = len(maze_lines)
+    cols = len(maze_lines[0])
+    
+    # Find S and E
+    start = None
+    end = None
+    for r in range(rows):
+        for c in range(cols):
+            if maze_lines[r][c] == 'S':
+                start = (r, c)
+            elif maze_lines[r][c] == 'E':
+                end = (r, c)
+    if not start or not end:
+        raise ValueError("Could not find 'S' or 'E' in the maze.")
+
+    # Dijkstra's algorithm
+    # State = (cost, row, col, direction)
+    # We start facing East (direction = 0)
+    INF = float('inf')
+    dist = [[[INF]*4 for _ in range(cols)] for __ in range(rows)]
+    start_dir = 0  # facing East
+    dist[start[0]][start[1]][start_dir] = 0
+    
+    pq = [(0, start[0], start[1], start_dir)]
+    heapq.heapify(pq)
+    
+    visited = set()
+    
+    while pq:
+        cost, r, c, d = heapq.heappop(pq)
+        
+        # If we've reached E, this is the minimal cost
+        if (r, c) == end:
+            return cost
+        
+        if (r, c, d) in visited:
+            continue
+        visited.add((r, c, d))
+        
+        current_dist = dist[r][c][d]
+        if cost > current_dist:
+            continue
+        
+        # Explore neighbors:
+        # 1) Move forward (cost + 1) if not a wall
+        dr, dc = directions[d]
+        nr, nc = r + dr, c + dc
+        if 0 <= nr < rows and 0 <= nc < cols and maze_lines[nr][nc] != '#':
+            new_cost = cost + 1
+            if new_cost < dist[nr][nc][d]:
+                dist[nr][nc][d] = new_cost
+                heapq.heappush(pq, (new_cost, nr, nc, d))
+        
+        # 2) Turn left (cost + 1000)
+        left_dir = (d - 1) % 4
+        new_cost = cost + 1000
+        if new_cost < dist[r][c][left_dir]:
+            dist[r][c][left_dir] = new_cost
+            heapq.heappush(pq, (new_cost, r, c, left_dir))
+        
+        # 3) Turn right (cost + 1000)
+        right_dir = (d + 1) % 4
+        new_cost = cost + 1000
+        if new_cost < dist[r][c][right_dir]:
+            dist[r][c][right_dir] = new_cost
+            heapq.heappush(pq, (new_cost, r, c, right_dir))
+    
+    return None  # If something fails
+
+def main():
+    # If reading from a file named input.txt:
+    with open("input.txt") as f:
+        lines = [line.rstrip("\n") for line in f]
+    
+    answer = solve_maze(lines)
+    if answer is None:
+        print("No path found!")
+    else:
+        print("Lowest possible score:", answer)
+
+if __name__ == "__main__":
+    main()
